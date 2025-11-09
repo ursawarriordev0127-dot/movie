@@ -53,9 +53,9 @@ export const moviesApi = {
     }
   },
 
-  getById: async (id: string): Promise<Movie> => {
+  getById: async (id: string): Promise<{ data: Movie }> => {
     const { data } = await api.get<Movie>(API_ENDPOINTS.MOVIES.BY_ID(id));
-    return data;
+    return { data };
   },
 
   create: async (
