@@ -2,7 +2,7 @@
 
 import React, { createContext, useContext } from 'react';
 import { useAuth as useAuthHook } from '@/src/features/auth/hooks/useAuth';
-import { User } from '@/src/types';
+import { User, AuthResponse } from '@/src/types';
 
 type AuthContextType = ReturnType<typeof useAuthHook>;
 
@@ -24,12 +24,23 @@ export const useAuth = (): AuthContextType => {
     // During SSR/prerendering, provide a default context instead of throwing
     if (typeof window === 'undefined') {
       // Return a safe default during SSR that matches the useAuth hook return type
+      // signIn and signUp return Promise<AuthResponse>, signOut returns Promise<void>
+      const defaultSignIn = async (_email: string, _password: string): Promise<AuthResponse> => {
+        throw new Error('signIn called during SSR');
+      };
+      const defaultSignUp = async (_email: string, _password: string): Promise<AuthResponse> => {
+        throw new Error('signUp called during SSR');
+      };
+      const defaultSignOut = async (): Promise<void> => {
+        // No-op during SSR
+      };
+      
       return {
         user: null,
         loading: true,
-        signIn: async () => {},
-        signUp: async () => {},
-        signOut: async () => {},
+        signIn: defaultSignIn,
+        signUp: defaultSignUp,
+        signOut: defaultSignOut,
         isAuthenticated: false,
       } as AuthContextType;
     }
