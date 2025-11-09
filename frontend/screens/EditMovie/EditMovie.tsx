@@ -25,13 +25,31 @@ export const EditMovie = (): JSX.Element => {
 
   const loadMovie = async (movieId: string) => {
     try {
-      const movie = await moviesApi.getById(movieId);
+      setLoading(true);
+      setError('');
+      const { data: movie } = await moviesApi.getById(movieId);
+
+      if (!movie) {
+        setError('Movie not found');
+        setLoading(false);
+        return;
+      }
+
+      // Safely set all movie data
       setMovie(movie);
-      setTitle(movie.title);
-      setPublishingYear(movie.publishing_year.toString());
-      setPreviewUrl(getImageUrl(movie.poster_url));
+      setTitle(movie.title || '');
+      setPublishingYear(movie.publishing_year != null ? String(movie.publishing_year) : '');
+
+      if (movie.poster_url) {
+        setPreviewUrl(getImageUrl(movie.poster_url));
+      } else {
+        setPreviewUrl(null);
+      }
     } catch (err: any) {
+      console.error('Error loading movie:', err);
       setError(err.response?.data?.message || err.message || 'Failed to load movie');
+    } finally {
+      setLoading(false);
     }
   };
 
