@@ -11,7 +11,7 @@ import { getImageUrl } from '@/src/utils';
 
 export const EditMovie = (): JSX.Element => {
   const params = useParams();
-  const id = params?.id as string | undefined;
+  const id = params ? (params.id as string | undefined) : undefined;
   const [movie, setMovie] = useState<Movie | null>(null);
   const [title, setTitle] = useState('');
   const [publishingYear, setPublishingYear] = useState('');
@@ -25,11 +25,11 @@ export const EditMovie = (): JSX.Element => {
 
   const loadMovie = async (movieId: string) => {
     try {
-      const { data } = await moviesApi.getById(movieId);
-      setMovie(data);
-      setTitle(data.title);
-      setPublishingYear(data.publishing_year.toString());
-      setPreviewUrl(getImageUrl(data.poster_url));
+      const movie = await moviesApi.getById(movieId);
+      setMovie(movie);
+      setTitle(movie.title);
+      setPublishingYear(movie.publishing_year.toString());
+      setPreviewUrl(getImageUrl(movie.poster_url));
     } catch (err: any) {
       setError(err.response?.data?.message || err.message || 'Failed to load movie');
     }
