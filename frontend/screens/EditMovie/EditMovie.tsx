@@ -11,7 +11,7 @@ import { getImageUrl } from '@/src/utils';
 
 export const EditMovie = (): JSX.Element => {
   const params = useParams();
-  const id = params.id as string;
+  const id = params?.id as string | undefined;
   const [movie, setMovie] = useState<Movie | null>(null);
   const [title, setTitle] = useState('');
   const [publishingYear, setPublishingYear] = useState('');
@@ -23,15 +23,9 @@ export const EditMovie = (): JSX.Element => {
   const { user } = useAuth();
   const router = useRouter();
 
-  useEffect(() => {
-    if (id) {
-      loadMovie();
-    }
-  }, [id]);
-
-  const loadMovie = async () => {
+  const loadMovie = async (movieId: string) => {
     try {
-      const { data } = await moviesApi.getById(id);
+      const { data } = await moviesApi.getById(movieId);
       setMovie(data);
       setTitle(data.title);
       setPublishingYear(data.publishing_year.toString());
@@ -40,6 +34,14 @@ export const EditMovie = (): JSX.Element => {
       setError(err.response?.data?.message || err.message || 'Failed to load movie');
     }
   };
+
+  useEffect(() => {
+    if (!id) {
+      router.push('/movies');
+      return;
+    }
+    loadMovie(id);
+  }, [id, router]);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -82,6 +84,11 @@ export const EditMovie = (): JSX.Element => {
     const year = parseInt(publishingYear);
     if (isNaN(year) || year < 1800 || year > new Date().getFullYear() + 10) {
       setError('Please enter a valid year');
+      return;
+    }
+
+    if (!id) {
+      setError('Movie ID is missing');
       return;
     }
 
