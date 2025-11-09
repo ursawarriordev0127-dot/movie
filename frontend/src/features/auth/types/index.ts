@@ -1,2 +1,2 @@
-export type { User, AuthResponse } from '@/types';
+export type { User, AuthResponse } from '@/src/types';
 
