@@ -18,44 +18,56 @@ export type PaginationQuery = {
 export const moviesApi = {
   getAll: async (query?: PaginationQuery): Promise<PaginatedResponse<Movie>> => {
     try {
-      const response = await api.get<PaginatedResponse<Movie>>(
-        API_ENDPOINTS.MOVIES.BASE,
-        { params: query },
-      );
+      const response = await api.get(API_ENDPOINTS.MOVIES.BASE, {
+        params: query,
+      });
       
-      // Handle different response structures
-      if (!response.data) {
+      // Backend uses TransformInterceptor which wraps response in { data: ..., statusCode: ... }
+      // So response.data is { data: PaginatedResponse<Movie>, statusCode: number }
+      const actualData = response.data?.data || response.data;
+      
+      if (!actualData) {
         throw new Error('No data in response');
       }
       
-      // If response.data is already the paginated structure
-      if (response.data.data && response.data.meta) {
-        return response.data;
+      // Ensure we have the expected structure
+      if (actualData.data && actualData.meta) {
+        return actualData as PaginatedResponse<Movie>;
       }
       
-      // If response.data is the array directly (unlikely but handle it)
-      if (Array.isArray(response.data)) {
+      // Fallback: if response is an array, wrap it
+      if (Array.isArray(actualData)) {
         return {
-          data: response.data,
+          data: actualData,
           meta: {
             page: query?.page || 1,
             limit: query?.limit || 10,
-            total: response.data.length,
+            total: actualData.length,
             totalPages: 1,
             hasMore: false,
           },
         };
       }
       
-      return response.data;
+      return actualData as PaginatedResponse<Movie>;
     } catch (error: any) {
       throw error;
     }
   },
 
-  getById: async (id: string): Promise<Movie> => {
-    const { data } = await api.get<Movie>(API_ENDPOINTS.MOVIES.BY_ID(id));
-    return data;
+  getById: async (id: string): Promise<{ data: Movie }> => {
+    const response = await api.get(API_ENDPOINTS.MOVIES.BY_ID(id));
+    
+    // Backend uses TransformInterceptor which wraps response in { data: ..., statusCode: ... }
+    // So response.data is { data: Movie, statusCode: number }
+    const actualData = response.data?.data || response.data;
+    
+    if (!actualData) {
+      throw new Error('No data in response');
+    }
+    
+    // Return as { data: Movie } to match EditMovie component expectation
+    return { data: actualData as Movie };
   },
 
   create: async (
@@ -69,7 +81,7 @@ export const moviesApi = {
       formData.append('poster', file);
     }
 
-    const { data } = await api.post<Movie>(
+    const response = await api.post(
       API_ENDPOINTS.MOVIES.BASE,
       formData,
       {
@@ -78,7 +90,15 @@ export const moviesApi = {
         },
       },
     );
-    return data;
+    
+    // Backend uses TransformInterceptor which wraps response in { data: ..., statusCode: ... }
+    const actualData = response.data?.data || response.data;
+    
+    if (!actualData) {
+      throw new Error('No data in response');
+    }
+    
+    return actualData as Movie;
   },
 
   update: async (
@@ -96,7 +116,7 @@ export const moviesApi = {
       formData.append('poster_url', movieData.poster_url || '');
     }
 
-    const { data } = await api.patch<Movie>(
+    const response = await api.patch(
       API_ENDPOINTS.MOVIES.BY_ID(id),
       formData,
       {
@@ -105,7 +125,15 @@ export const moviesApi = {
         },
       },
     );
-    return data;
+    
+    // Backend uses TransformInterceptor which wraps response in { data: ..., statusCode: ... }
+    const actualData = response.data?.data || response.data;
+    
+    if (!actualData) {
+      throw new Error('No data in response');
+    }
+    
+    return actualData as Movie;
   },
 
   delete: async (id: string): Promise<void> => {

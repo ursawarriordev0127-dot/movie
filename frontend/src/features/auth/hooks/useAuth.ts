@@ -38,44 +38,28 @@ export const useAuth = () => {
     try {
       const response = await authApi.signIn(email, password);
       
-      // Check if response is valid
-      if (!response) {
-        throw new Error('No response received from server');
+      // Validate response structure (API layer should have already handled this)
+      if (!response || !response.access_token || !response.user) {
+        throw new Error('Invalid response from server');
       }
       
-      // Check if access_token exists (handle both direct property and nested)
-      let accessToken: string | undefined;
-      if (typeof response === 'object') {
-        accessToken = (response as any).access_token;
-        if (!accessToken && (response as any).data) {
-          accessToken = (response as any).data.access_token;
-        }
+      // Validate token format
+      const token = String(response.access_token).trim();
+      if (!token || token.length === 0) {
+        throw new Error('Token is empty');
       }
       
-      if (!accessToken) {
-        throw new Error('Invalid response from server: missing access_token');
+      // Validate JWT format (should have 3 parts separated by dots)
+      const tokenParts = token.split('.');
+      if (tokenParts.length !== 3) {
+        throw new Error('Invalid JWT token format');
       }
       
-      // Ensure token is properly formatted
-      const token = String(accessToken).trim();
-      
-      if (!token || token.length < 10) {
-        throw new Error('Invalid token received from server: token is too short');
-      }
-      
-      if (token.split('.').length !== 3) {
-        throw new Error('Invalid JWT token format received from server');
-      }
-      
-      // Get user data
-      const userData = (response as any).user || (response as any).data?.user;
-      if (!userData) {
-        throw new Error('Invalid response from server: missing user data');
-      }
-      
+      // Store token and user data
       localStorage.setItem(STORAGE_KEYS.TOKEN, token);
-      localStorage.setItem(STORAGE_KEYS.USER, JSON.stringify(userData));
-      setUser(userData);
+      localStorage.setItem(STORAGE_KEYS.USER, JSON.stringify(response.user));
+      setUser(response.user);
+      
       return response;
     } catch (error: any) {
       // Clear any stale data on error
@@ -87,20 +71,41 @@ export const useAuth = () => {
   }, []);
 
   const signUp = useCallback(async (email: string, password: string) => {
-    const response = await authApi.signUp(email, password);
-    // Validate token before storing
-    if (!response.access_token || typeof response.access_token !== 'string') {
-      throw new Error('Invalid token received from server');
+    try {
+      const response = await authApi.signUp(email, password);
+      
+      // Validate response structure (API layer should have already handled this)
+      if (!response || !response.access_token || !response.user) {
+        throw new Error('Invalid response from server');
+      }
+      
+      // Validate token format
+      const token = String(response.access_token).trim();
+      if (!token || token.length === 0) {
+        throw new Error('Token is empty');
+      }
+      
+      // Validate JWT format (should have 3 parts separated by dots)
+      const tokenParts = token.split('.');
+      if (tokenParts.length !== 3) {
+        throw new Error('Invalid JWT token format');
+      }
+      
+      // Store token and user data
+      localStorage.setItem(STORAGE_KEYS.TOKEN, token);
+      localStorage.setItem(STORAGE_KEYS.USER, JSON.stringify(response.user));
+      setUser(response.user);
+      
+      return response;
+    } catch (error: any) {
+      console.error('Signup error:', error);
+      
+      // Clear any stale data on error
+      localStorage.removeItem(STORAGE_KEYS.TOKEN);
+      localStorage.removeItem(STORAGE_KEYS.USER);
+      setUser(null);
+      throw error;
     }
-    // Ensure token is properly formatted
-    const token = String(response.access_token).trim();
-    if (token.split('.').length !== 3) {
-      throw new Error('Invalid JWT token format');
-    }
-    localStorage.setItem(STORAGE_KEYS.TOKEN, token);
-    localStorage.setItem(STORAGE_KEYS.USER, JSON.stringify(response.user));
-    setUser(response.user);
-    return response;
   }, []);
 
   const signOut = useCallback(async () => {

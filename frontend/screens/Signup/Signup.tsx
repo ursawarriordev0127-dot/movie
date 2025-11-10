@@ -22,6 +22,13 @@ export const Signup = (): JSX.Element => {
     setError('');
     setSuccess(false);
 
+    // Validate email format
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      setError('Please enter a valid email address');
+      return;
+    }
+
     // Validate passwords match
     if (password !== confirmPassword) {
       setError('Passwords do not match');
@@ -37,16 +44,38 @@ export const Signup = (): JSX.Element => {
     setLoading(true);
 
     try {
-      await signUp(email, password);
+      await signUp(email.trim(), password);
       setSuccess(true);
+      setLoading(false);
+      // Clear form on success
+      setEmail('');
+      setPassword('');
+      setConfirmPassword('');
       // Redirect after a brief success message
       setTimeout(() => {
         router.push('/movies');
       }, 1000);
     } catch (err: any) {
-      const errorMessage = err.response?.data?.message || err.message || 'Failed to sign up';
+      console.error('Signup component error:', err);
+      // Extract error message from various possible error structures
+      let errorMessage = 'Failed to sign up';
+      
+      if (err.response?.data?.message) {
+        errorMessage = err.response.data.message;
+      } else if (err.response?.data?.error) {
+        errorMessage = err.response.data.error;
+      } else if (err.message) {
+        errorMessage = err.message;
+      } else if (typeof err === 'string') {
+        errorMessage = err;
+      }
+      
       setError(errorMessage);
       setLoading(false);
+      
+      // Clear password fields on error for security
+      setPassword('');
+      setConfirmPassword('');
     }
   };
 
@@ -94,7 +123,17 @@ export const Signup = (): JSX.Element => {
           />
 
           {error && (
-            <p className="text-[#EB5757] text-sm text-center">{error}</p>
+            <div className="text-center">
+              <p className="text-[#EB5757] text-sm mb-2">{error}</p>
+              {error.toLowerCase().includes('already exists') && (
+                <p className="text-white text-xs">
+                  Already have an account?{' '}
+                  <Link href="/" className="text-[#2bd17e] hover:underline font-semibold">
+                    Sign in here
+                  </Link>
+                </p>
+              )}
+            </div>
           )}
 
           {success && (

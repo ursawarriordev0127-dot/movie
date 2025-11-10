@@ -21,16 +21,70 @@ export const Login = (): JSX.Element => {
     setError('');
     setLoading(true);
 
+    // Basic validation
+    if (!email.trim()) {
+      setError('Please enter your email address');
+      setLoading(false);
+      return;
+    }
+
+    if (!password.trim()) {
+      setError('Please enter your password');
+      setLoading(false);
+      return;
+    }
+
     try {
-      await signIn(email, password);
+      await signIn(email.trim(), password);
       
       // Use window.location for a hard redirect to ensure state is cleared
       window.location.href = '/movies';
     } catch (err: any) {
       console.error('Sign in error:', err);
-      const errorMessage = err.response?.data?.message || err.message || 'Failed to sign in';
+      
+      // Extract error message from various possible error structures
+      let errorMessage = 'Failed to sign in';
+      
+      // Check for HTTP error responses
+      if (err.response) {
+        const status = err.response.status;
+        const responseData = err.response.data;
+        
+        // Handle 401 Unauthorized (invalid credentials)
+        if (status === 401) {
+          errorMessage = 'Invalid email or password. Please check your credentials and try again.';
+        }
+        // Handle 400 Bad Request
+        else if (status === 400) {
+          errorMessage = responseData?.message || 'Invalid request. Please check your input.';
+        }
+        // Handle other error responses
+        else if (responseData?.message) {
+          errorMessage = responseData.message;
+        } else if (responseData?.error) {
+          errorMessage = responseData.error;
+        } else if (typeof responseData === 'string') {
+          errorMessage = responseData;
+        }
+      }
+      // Handle network errors
+      else if (err.message) {
+        if (err.message.includes('Network Error') || err.message.includes('timeout')) {
+          errorMessage = 'Network error. Please check your connection and try again.';
+        } else {
+          errorMessage = err.message;
+        }
+      }
+      // Handle string errors
+      else if (typeof err === 'string') {
+        errorMessage = err;
+      }
+      
       setError(errorMessage);
       setLoading(false);
+      
+      // Clear password field on error for security
+      setPassword('');
     }
   };
 
@@ -83,7 +137,9 @@ export const Login = (): JSX.Element => {
           </div>
 
           {error && (
-            <p className="text-[#EB5757] text-sm text-center">{error}</p>
+            <div className="bg-[#EB5757]/10 border border-[#EB5757]/30 rounded-[10px] p-3">
+              <p className="text-[#EB5757] text-sm text-center font-medium">{error}</p>
+            </div>
           )}
 
           <Button
