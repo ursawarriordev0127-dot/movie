@@ -5,6 +5,9 @@ import { useRouter } from 'next/navigation';
 import LoginPage from '@/src/pages/auth/LoginPage';
 import { useAuth } from '@/src/providers';
 
+// Force dynamic rendering to prevent prerendering issues with AuthProvider
+export const dynamic = 'force-dynamic';
+
 export default function Home() {
   const { user, loading } = useAuth();
   const router = useRouter();

@@ -36,10 +36,10 @@ export const useMovies = (initialQuery?: PaginationQuery) => {
         return;
       }
       
-      // Handle response structure - response.data.data is the array of movies
-      const moviesData = Array.isArray(response.data?.data) ? response.data.data : (Array.isArray(response.data) ? response.data : []);
+      // response is already PaginatedResponse<Movie>, so response.data is Movie[]
+      const moviesData = Array.isArray(response.data) ? response.data : [];
       
-      const paginationMeta = response.data?.meta || response.meta || {
+      const paginationMeta = response.meta || {
         page: query?.page || DEFAULT_PAGE,
         limit: query?.limit || DEFAULT_LIMIT,
         total: 0,
